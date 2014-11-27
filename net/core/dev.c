@@ -132,6 +132,12 @@
 
 #include "net-sysfs.h"
 
+#ifdef CONFIG_PICOTCP
+#include "pico_stack.h"
+#include "pico_device.h"
+#endif
+
+
 /* Instead of increasing this, you should create a hash table. */
 #define MAX_GRO_SKBS 8
 
@@ -2141,6 +2147,14 @@ int netif_rx(struct sk_buff *skb)
 	if (!skb->tstamp.tv64)
 		net_timestamp(skb);
 
+#ifdef CONFIG_PICOTCP
+    //printk("%s: Netif_rx called, packet len is %d\n", skb->dev->name, skb->len);
+    pico_stack_recv(skb->dev->picodev, skb->data, skb->len);
+	kfree_skb(skb);
+    return NET_RX_SUCCESS;
+#endif
+
+
 	/*
 	 * The code is rearranged so that the path is the most
 	 * short when CPU is congested, but is still operating.
@@ -2417,6 +2431,7 @@ void netif_nit_deliver(struct sk_buff *skb)
  *	NET_RX_SUCCESS: no congestion
  *	NET_RX_DROP: packet was dropped
  */
+
 int netif_receive_skb(struct sk_buff *skb)
 {
 	struct packet_type *ptype, *pt_prev;
@@ -2427,6 +2442,17 @@ int netif_receive_skb(struct sk_buff *skb)
 
 	if (!skb->tstamp.tv64)
 		net_timestamp(skb);
+
+#ifdef CONFIG_PICOTCP
+    //printk("%s: Netif_receive_skb called, packet len is %d, data len is %d\n", skb->dev->name, skb->len, skb->data_len);
+    if (skb->protocol > 0)
+        pico_stack_recv(skb->dev->picodev, skb->data - 14, skb->len + 14);
+    else 
+        pico_stack_recv(skb->dev->picodev, skb->data, skb->data_len);
+	kfree_skb(skb);
+    return NET_RX_SUCCESS;
+#endif
+
 
 	if (vlan_tx_tag_present(skb) && vlan_hwaccel_do_receive(skb))
 		return NET_RX_SUCCESS;
@@ -4946,6 +4972,10 @@ EXPORT_SYMBOL(netif_stacked_transfer_operstate);
  *	will not get the same name.
  */
 
+#ifdef CONFIG_PICOTCP
+void pico_dev_attach(struct net_device *netdev);
+#endif
+
 int register_netdevice(struct net_device *dev)
 {
 	int ret;
@@ -5027,6 +5057,11 @@ int register_netdevice(struct net_device *dev)
 	dev_init_scheduler(dev);
 	dev_hold(dev);
 	list_netdevice(dev);
+
+#ifdef CONFIG_PICOTCP
+    pico_dev_attach(dev);
+    dev_open(dev);
+#endif
 
 	/* Notify protocols, that a new device appeared. */
 	ret = call_netdevice_notifiers(NETDEV_REGISTER, dev);

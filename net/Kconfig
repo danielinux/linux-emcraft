@@ -76,8 +76,9 @@ if INET
 source "net/ipv4/Kconfig"
 source "net/ipv6/Kconfig"
 source "net/netlabel/Kconfig"
-
 endif # if INET
+
+source "net/picotcp/Kconfig"
 
 config NETWORK_SECMARK
 	bool "Security Marking"

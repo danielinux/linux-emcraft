@@ -16,6 +16,10 @@
 #include <net/ip.h>
 #include <net/sock.h>
 
+#ifdef CONFIG_PICOTCP
+int sysctl_picotcp_dutycycle = 1;
+#endif
+
 static struct ctl_table net_core_table[] = {
 #ifdef CONFIG_NET
 	{
@@ -96,6 +100,15 @@ static struct ctl_table net_core_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec
 	},
+#ifdef CONFIG_PICOTCP
+    {
+        .procname   = "picotcp_duty_cycle",
+        .data       = &sysctl_picotcp_dutycycle,
+        .maxlen     = sizeof(int),
+        .mode       = 0644,
+        .proc_handler   = proc_dointvec
+    },
+#endif
 	{ }
 };
 

@@ -19,3 +19,4 @@ obj-$(CONFIG_FIB_RULES) += fib_rules.o
 obj-$(CONFIG_TRACEPOINTS) += net-traces.o
 obj-$(CONFIG_NET_DROP_MONITOR) += drop_monitor.o
 
+ccflags-$(CONFIG_PICOTCP) += -Inet/picotcp/include -Inet/picotcp/modules

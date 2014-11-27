@@ -404,6 +404,8 @@ EXPORT_SYMBOL(phy_mii_ioctl);
 int phy_start_aneg(struct phy_device *phydev)
 {
 	int err;
+    if (!phydev)
+        return -EBUSY;
 
 	mutex_lock(&phydev->lock);
 
@@ -467,6 +469,8 @@ void phy_start_machine(struct phy_device *phydev,
  */
 void phy_stop_machine(struct phy_device *phydev)
 {
+    if(!phydev)
+        return;
 	cancel_delayed_work_sync(&phydev->state_queue);
 
 	mutex_lock(&phydev->lock);
@@ -516,6 +520,8 @@ static void phy_force_reduction(struct phy_device *phydev)
  */
 static void phy_error(struct phy_device *phydev)
 {
+    if(!phydev)
+        return;
 	mutex_lock(&phydev->lock);
 	phydev->state = PHY_HALTED;
 	mutex_unlock(&phydev->lock);
@@ -675,6 +681,9 @@ static void phy_change(struct work_struct *work)
 	struct phy_device *phydev =
 		container_of(work, struct phy_device, phy_queue);
 
+    if(!phydev)
+        return;
+
 	if (phydev->drv->did_interrupt &&
 	    !phydev->drv->did_interrupt(phydev))
 		goto ignore;
@@ -723,6 +732,8 @@ phy_err:
  */
 void phy_stop(struct phy_device *phydev)
 {
+    if(!phydev)
+        return;
 	mutex_lock(&phydev->lock);
 
 	if (PHY_HALTED == phydev->state)
@@ -761,6 +772,8 @@ out_unlock:
  */
 void phy_start(struct phy_device *phydev)
 {
+    if (!phydev)
+        return;
 	mutex_lock(&phydev->lock);
 
 	switch (phydev->state) {
@@ -791,6 +804,9 @@ void phy_state_machine(struct work_struct *work)
 			container_of(dwork, struct phy_device, state_queue);
 	int needs_aneg = 0;
 	int err = 0;
+
+    if(!phydev)
+        return;
 
 	mutex_lock(&phydev->lock);
 

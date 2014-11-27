@@ -50,6 +50,10 @@
 #include <net/dcbnl.h>
 #endif
 
+#ifdef CONFIG_PICOTCP
+struct pico_device;
+#endif
+
 struct vlan_group;
 struct netpoll_info;
 /* 802.11 specific */
@@ -953,6 +957,11 @@ struct net_device {
 	/* max exchange id for FCoE LRO by ddp */
 	unsigned int		fcoe_ddp_xid;
 #endif
+
+#ifdef CONFIG_PICOTCP
+    struct pico_device *picodev;
+#endif
+
 };
 #define to_net_dev(d) container_of(d, struct net_device, dev)
 

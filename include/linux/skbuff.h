@@ -247,6 +247,7 @@ enum {
 
 #if BITS_PER_LONG > 32
 #define NET_SKBUFF_DATA_USES_OFFSET 1
+#error "LONG IS TOO LONG!"
 #endif
 
 #ifdef NET_SKBUFF_DATA_USES_OFFSET
