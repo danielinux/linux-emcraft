@@ -153,8 +153,8 @@ static void picotcp_dev_attach_retry(struct work_struct *todo)
     pico = temp->pico;
 
 	if (!pico_stack_is_ready) {
-	    printk("Stack still not ready. Device %s will be attached later.\n", pico->netdev->name);
-        schedule_delayed_work(&(pico->net_init.work), 100 * sysctl_picotcp_dutycycle);
+		printk("Stack still not ready. Device %s will be attached later.\n", pico->netdev->name);
+		schedule_delayed_work(&(pico->net_init.work), 100 * sysctl_picotcp_dutycycle);
 		return;
 	}
 
@@ -180,10 +180,10 @@ void pico_dev_attach(struct net_device *netdev)
     pico_linux_dev->netdev = netdev;
 
     if (!pico_stack_is_ready) {
-	    printk("Stack not ready. Device %s will be attached later.\n", netdev->name);
-        INIT_DELAYED_WORK(&(pico_linux_dev->net_init.work), picotcp_dev_attach_retry);
-        pico_linux_dev->net_init.pico = pico_linux_dev;
-        schedule_delayed_work(&(pico_linux_dev->net_init.work), 100 * sysctl_picotcp_dutycycle);
+		printk("Stack not ready. Device %s will be attached later.\n", netdev->name);
+		INIT_DELAYED_WORK(&(pico_linux_dev->net_init.work), picotcp_dev_attach_retry);
+		pico_linux_dev->net_init.pico = pico_linux_dev;
+		schedule_delayed_work(&(pico_linux_dev->net_init.work), 100 * sysctl_picotcp_dutycycle);
 		return;
     }
 
