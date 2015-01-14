@@ -5,10 +5,9 @@ ccflags-y += -I net/tcpip/picotcp/include -I net/tcpip/picotcp/modules -I net/tc
 
 obj-y     := af_inet.o \
 			netdev.o \
-			sock.o \
+			core.o \
 			ioctl.o \
-			proc.o \
-			core.o
+			proc.o
 
 obj-y     += picotcp/stack/pico_device.o \
 			picotcp/stack/pico_frame.o \

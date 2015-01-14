@@ -1,15 +1,28 @@
+/*********************************************************************
+PicoTCP. Copyright (c) 2013-2015 TASS Belgium NV. Some rights reserved.
+See LICENSE and COPYING for usage.
+Do not redistribute without a written permission by the Copyright
+holders.
+
+Author: Daniele Lacamera, Maxime Vincent
+*********************************************************************/
+
 #include "pico_device.h"
+#include "pico_config.h"    /* for zalloc and free */
 #include "pico_stack.h"
 #include "pico_dev_loop.h"
 #include <picotcp.h>
 #include <linux/types.h>
 #include <linux/socket.h>
 #include <linux/wait.h>
+#include "linux/kthread.h"
 
 volatile int pico_stack_is_ready;
 static struct workqueue_struct *picotcp_workqueue;
 static struct delayed_work picotcp_work;
 wait_queue_head_t picotcp_stack_init_wait;
+/* pico stack lock */
+void * picoLock = NULL;
 
 extern int ip_route_proc_init(void);
 
@@ -45,6 +58,26 @@ static int picotcp_loopback_init(void)
     return 0;
 }
 #endif
+
+
+/* Public functions */
+void pico_bsd_init(void)
+{
+    picoLock = pico_mutex_init();
+}
+
+void pico_bsd_deinit(void)
+{
+    pico_mutex_deinit(picoLock);
+}
+
+void pico_bsd_stack_tick(void)
+{
+    pico_mutex_lock(picoLock);
+    pico_stack_tick();
+    pico_stack_tick();
+    pico_mutex_unlock(picoLock);
+}
 
 /* Stack Init Functions */
 int __init picotcp_init(void)
