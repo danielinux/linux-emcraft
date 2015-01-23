@@ -31,6 +31,7 @@
 #include <linux/poll.h>
 #include <linux/random.h>
 #include <linux/slab.h>
+#include <linux/jiffies.h>
 #include <picotcp.h>
 
 #include <asm/uaccess.h>
@@ -154,7 +155,7 @@ static void picotcp_dev_attach_retry(struct work_struct *todo)
 
 	if (!pico_stack_is_ready) {
 		printk("Stack still not ready. Device %s will be attached later.\n", pico->netdev->name);
-		schedule_delayed_work(&(pico->net_init.work), 100 * sysctl_picotcp_dutycycle);
+		schedule_delayed_work(&(pico->net_init.work), msecs_to_jiffies(100 * sysctl_picotcp_dutycycle));
 		return;
 	}
 
@@ -183,7 +184,7 @@ void pico_dev_attach(struct net_device *netdev)
 		printk("Stack not ready. Device %s will be attached later.\n", netdev->name);
 		INIT_DELAYED_WORK(&(pico_linux_dev->net_init.work), picotcp_dev_attach_retry);
 		pico_linux_dev->net_init.pico = pico_linux_dev;
-		schedule_delayed_work(&(pico_linux_dev->net_init.work), 100 * sysctl_picotcp_dutycycle);
+		schedule_delayed_work(&(pico_linux_dev->net_init.work), msecs_to_jiffies(100 * sysctl_picotcp_dutycycle));
 		return;
     }
 

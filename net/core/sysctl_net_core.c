@@ -17,7 +17,8 @@
 #include <net/sock.h>
 
 #ifdef CONFIG_PICOTCP
-int sysctl_picotcp_dutycycle = 1;
+int sysctl_picotcp_dutycycle = 10; /* initial dutycycle in milliseconds */
+int sysctl_picotcp_tick_count = 0;
 #endif
 
 static struct ctl_table net_core_table[] = {
@@ -104,6 +105,13 @@ static struct ctl_table net_core_table[] = {
     {
         .procname   = "picotcp_duty_cycle",
         .data       = &sysctl_picotcp_dutycycle,
+        .maxlen     = sizeof(int),
+        .mode       = 0644,
+        .proc_handler   = proc_dointvec
+    },
+    {
+        .procname   = "picotcp_tick_count",
+        .data       = &sysctl_picotcp_tick_count,
         .maxlen     = sizeof(int),
         .mode       = 0644,
         .proc_handler   = proc_dointvec
