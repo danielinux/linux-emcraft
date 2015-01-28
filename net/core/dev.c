@@ -2148,12 +2148,18 @@ int netif_rx(struct sk_buff *skb)
 		net_timestamp(skb);
 
 #ifdef CONFIG_PICOTCP
-    //printk("%s: Netif_rx called, packet len is %d\n", skb->dev->name, skb->len);
-    pico_stack_recv(skb->dev->picodev, skb->data, skb->len);
-	kfree_skb(skb);
-    return NET_RX_SUCCESS;
+    {
+        int retval = 0;
+        //printk(KERN_WARNING "%s: Netif_rx called, packet len is %d\n", skb->dev->name, skb->len);
+        retval = pico_stack_recv(skb->dev->picodev, skb->data, skb->len);
+        kfree_skb(skb);
+        if (retval < 0)
+            retval = NET_RX_DROP;
+        else
+            retval = NET_RX_SUCCESS;
+        return retval;
+    }
 #endif
-
 
 	/*
 	 * The code is rearranged so that the path is the most
@@ -2444,13 +2450,20 @@ int netif_receive_skb(struct sk_buff *skb)
 		net_timestamp(skb);
 
 #ifdef CONFIG_PICOTCP
-    //printk("%s: Netif_receive_skb called, packet len is %d, data len is %d\n", skb->dev->name, skb->len, skb->data_len);
-    if (skb->protocol > 0)
-        pico_stack_recv(skb->dev->picodev, skb->data - 14, skb->len + 14);
-    else 
-        pico_stack_recv(skb->dev->picodev, skb->data, skb->data_len);
-	kfree_skb(skb);
-    return NET_RX_SUCCESS;
+    {
+        int retval = 0;
+        //printk("%s: Netif_receive_skb called, packet len is %d, data len is %d\n", skb->dev->name, skb->len, skb->data_len);
+        if (skb->protocol > 0)
+            retval = pico_stack_recv(skb->dev->picodev, skb->data - 14, skb->len + 14);
+        else 
+            retval = pico_stack_recv(skb->dev->picodev, skb->data, skb->data_len);
+        kfree_skb(skb);
+        if (retval < 0)
+            retval = NET_RX_DROP;
+        else
+            retval = NET_RX_SUCCESS;
+        return retval;
+    }
 #endif
 
 
