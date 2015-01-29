@@ -7,7 +7,7 @@
 #include <asm/thread_info.h>
 #include <asm/memory.h>
 #include <asm/page.h>
-	
+
 OUTPUT_ARCH(arm)
 ENTRY(stext)
 
@@ -44,7 +44,7 @@ SECTIONS
 		 * and that initramfs is large enough, there is a symbol
 		 * in .proc.info.init that makes a relative reference
 		 * (in an assembly-level file) to a symbol in the kernel text.
-		 * The initramfs being large, that relative reference 
+		 * The initramfs being large, that relative reference
 		 * doesn't work because the linker is not able to fit
 		 * in the relative offset into the 24 bit offset field.
 		 * The solution (well, part of it) is to move .proc.info.init
@@ -80,7 +80,7 @@ SECTIONS
 		__init_begin = _stext;
 		INIT_DATA
 #endif
-	} 
+	}
 
 	PERCPU(PAGE_SIZE)
 
@@ -203,7 +203,7 @@ SECTIONS
 #endif /* CONFIG_KERNEL_IN_ENVM_SIZE>0 */
 
 		_envm_end = .;
-	} 
+	}
 
 	. = _envm_loc;
 #endif /* CONFIG_KERNEL_IN_ENVM */
@@ -302,6 +302,23 @@ SECTIONS
 		_edata = .;
 	}
 	_edata_loc = __data_loc + SIZEOF(.data);
+
+#ifdef SRAM_PHYS_OFFSET
+/*
+ * SRAM code for Flash/SDRAM issue, see errata 2.8.7
+ */
+	. = ALIGN(PAGE_SIZE);
+	__sram_loc = .;
+	.sram SRAM_PHYS_OFFSET + vector_table_end - vector_table : AT(__sram_loc) {
+		_sram_start = .;
+		*(.sram.text)
+		*(.sram.data)
+		_sram_end = .;
+	}
+	_esram_loc = __sram_loc + SIZEOF(.sram);
+	. = _esram_loc;
+	. = ALIGN(4);
+#endif
 
 #ifdef CONFIG_HAVE_TCM
         /*

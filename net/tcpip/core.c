@@ -20,12 +20,14 @@ Author: Daniele Lacamera, Maxime Vincent
 
 volatile int pico_stack_is_ready;
 static struct workqueue_struct *picotcp_workqueue;
-static struct delayed_work picotcp_work;
+static struct delayed_work picotcp_delayed_work;
+static struct work_struct picotcp_work;
 wait_queue_head_t picotcp_stack_init_wait;
 /* pico stack lock */
 void * picoLock = NULL;
 
 extern int sysctl_picotcp_tick_count;
+static void picotcp_schedule_work(void);
 
 extern int ip_route_proc_init(void);
 
@@ -38,7 +40,7 @@ static void picotcp_tick(struct work_struct *unused)
         pico_bsd_stack_tick();
         sysctl_picotcp_tick_count++;
     }
-    queue_delayed_work(picotcp_workqueue, &picotcp_work, msecs_to_jiffies(sysctl_picotcp_dutycycle));
+    picotcp_schedule_work();
 }
 
 #ifdef CONFIG_PICOTCP_DEVLOOP
@@ -79,21 +81,57 @@ void pico_bsd_stack_tick(void)
 {
     pico_mutex_lock(picoLock);
     pico_stack_tick();
-    pico_stack_tick();
     pico_mutex_unlock(picoLock);
 }
 
-/* Stack Init Functions */
+#ifdef CONFIG_HIGH_RES_TIMERS
+#include "linux/hrtimer.h"
+static struct hrtimer pico_tick_hrtimer;
+
+static enum hrtimer_restart picotcp_tick_timeout(struct hrtimer *t)
+{
+    queue_work(picotcp_workqueue, &picotcp_work);
+    return HRTIMER_NORESTART;
+}
+
+static void picotcp_init_workqueues(void)
+{
+    INIT_WORK(&picotcp_work, picotcp_tick);
+    hrtimer_init(&pico_tick_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+    pico_tick_hrtimer.function = picotcp_tick_timeout;
+    printk("PicoTCP created [using high-speed timer].\n");
+}
+
+static void picotcp_schedule_work(void)
+{
+    ktime_t interval;
+    interval = ktime_set(0, sysctl_picotcp_dutycycle * 1000000); /* ns to ms */
+    hrtimer_start(&pico_tick_hrtimer, interval, HRTIMER_MODE_REL);
+}
+
+#else /* NO CONFIG_HIGH_RES_TIMERS */
+static void picotcp_init_workqueues(void)
+{
+    INIT_DELAYED_WORK(&picotcp_delayed_work, picotcp_tick);
+    printk("PicoTCP created [using delayed workqueue].\n");
+}
+
+static void picotcp_schedule_work(void)
+{
+    queue_delayed_work(picotcp_workqueue, &picotcp_delayed_work, sysctl_picotcp_dutycycle);
+}
+#endif
+
+/* Stack Init Function */
 int __init picotcp_init(void)
 {
+
     init_waitqueue_head(&picotcp_stack_init_wait);
     if (pico_stack_init() < 0)
         panic("Unable to start picoTCP\n");
     pico_bsd_init();
     picotcp_workqueue = create_singlethread_workqueue("picotcp_tick");
-    INIT_DELAYED_WORK(&picotcp_work, picotcp_tick);
-    printk("PicoTCP created.\n");
-    queue_delayed_work(picotcp_workqueue, &picotcp_work, msecs_to_jiffies(sysctl_picotcp_dutycycle));
+    picotcp_init_workqueues();
     pico_stack_is_ready++;
     wake_up_interruptible_all(&picotcp_stack_init_wait);
 
@@ -103,6 +141,8 @@ int __init picotcp_init(void)
 
     if (picotcp_loopback_init() < 0)
       printk("picoTCP: failed to initialize loopback device.\n");
+    
+    picotcp_schedule_work();
     return 0;
 }
 fs_initcall(picotcp_init);
